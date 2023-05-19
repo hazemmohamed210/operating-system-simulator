@@ -13,7 +13,7 @@ public class Interpreter {
 	private Mutex mutex;
 	private Scheduler scheduler;
 	
-	// initial commit
+	// 2nd commit
 	public Interpreter(int timeSlice, String[] programs, int[] arrivalTimes) {
 		this.readyQueue = new ConcurrentLinkedQueue<>();
 		this.blockedQueue = new ConcurrentLinkedQueue<>();
