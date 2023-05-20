@@ -9,10 +9,13 @@ public class Memory {
 		this.lastIndex = 10;
 		this.kernelSpaceIndex = 0;
 	}
-	public void addPCB(Pair pcb) {
+	public void addPCB(PCB pcb) {
 		if(this.kernelSpaceIndex < 10) {
-			this.data[this.kernelSpaceIndex] = pcb;
-			this.kernelSpaceIndex++;
+			this.data[this.kernelSpaceIndex] = new Pair("processId",pcb.getProcessId());
+			this.data[this.kernelSpaceIndex+1] = new Pair("PC",pcb.getPc());
+			this.data[this.kernelSpaceIndex+2] = new Pair("processState",pcb.getProcessState());
+			this.data[this.kernelSpaceIndex+3] = new Pair("memoryBoundaries", pcb.getMemBoundries());
+			this.kernelSpaceIndex+= 4;
 		}
 	}
 	
@@ -25,6 +28,10 @@ public class Memory {
 
 	public Object get(int index) {
 		return data[index];
+	}
+	
+	public void set(int i, Object o) {
+		this.data[i] = o;
 	}
 	
 	public int getLastIndex() {
@@ -48,6 +55,22 @@ public class Memory {
 				((PCB) this.data[i]).setPc(((PCB) this.data[i]).getPc()+1);
 			}
 		}
+	}
+	
+	public int[] getProcessBounds(int pId) {
+		int[] prcs = new int[4];
+		for(int i = 0; i<10; i++) {
+			Pair p = (Pair)this.data[i];
+			if(p.getName().equals("processId") && (int)p.getValue() == pId) {
+				prcs[0] = i;
+				prcs[1] = i+4;
+				int[] tmp = (int[])(((Pair)this.data[i+3]).getValue());
+				prcs[2] = tmp[0];
+				prcs[3] = tmp[1];
+				return prcs;
+			}
+		}
+		return null;
 	}
 
 	public String toString() {
