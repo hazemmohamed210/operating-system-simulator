@@ -6,11 +6,11 @@ public class Memory {
 	private int lastIndex;
 
 	public Memory() {
-		this.lastIndex = 10;
+		this.lastIndex = 8;
 		this.kernelSpaceIndex = 0;
 	}
 	public void addPCB(PCB pcb) {
-		if(this.kernelSpaceIndex < 10) {
+		if(this.kernelSpaceIndex < 8) {
 			this.data[this.kernelSpaceIndex] = new Pair("processId",pcb.getProcessId());
 			this.data[this.kernelSpaceIndex+1] = new Pair("PC",pcb.getPc());
 			this.data[this.kernelSpaceIndex+2] = new Pair("processState",pcb.getProcessState());
@@ -50,18 +50,21 @@ public class Memory {
 	}
 	
 	public void updateProcessPC(int pId) {
-		for(int i = 0; i<10; i++) {
-			if(((PCB) this.data[i]).getProcessId() == pId) {
-				((PCB) this.data[i]).setPc(((PCB) this.data[i]).getPc()+1);
-			}
+		if(this.data[0] != null && (int)((Pair)this.data[0]).getValue() == pId) {
+			int pc = (int)((Pair)this.data[1]).getValue();
+			this.data[1] = new Pair("PC",pc+1);
+		} else if (this.data[4] != null && (int)((Pair)this.data[4]).getValue() == pId) {
+			int pc = (int)((Pair)this.data[5]).getValue();
+			this.data[5] = new Pair("PC",pc+1);
 		}
 	}
 	
 	public int[] getProcessBounds(int pId) {
 		int[] prcs = new int[4];
-		for(int i = 0; i<10; i++) {
+		for(int i = 0; i<8; i++) {
 			Pair p = (Pair)this.data[i];
-			if(p.getName().equals("processId") && (int)p.getValue() == pId) {
+//			System.out.println("I = "+i);
+			if(p != null && p.getName().equals("processId") && (int)p.getValue() == pId) {
 				prcs[0] = i;
 				prcs[1] = i+4;
 				int[] tmp = (int[])(((Pair)this.data[i+3]).getValue());
@@ -79,8 +82,8 @@ public class Memory {
 		r+= "-------------------------------------------------------------------------------------"+"\n"+"Memory"+"\n"+"------"+"\n";
 		r+= "------------------------------------- kernel space -------------------------------------"+"\n";
 		for(int i = 0; i<40; i++) {
-			if (i == 10) r+= "------------------------------------- first space -------------------------------------"+"\n";
-			if (i == 25) r+= "------------------------------------- second space ------------------------------------"+"\n";
+			if (i == 8) r+= "------------------------------------- first space -------------------------------------"+"\n";
+			if (i == 24) r+= "------------------------------------- second space ------------------------------------"+"\n";
 			r+= i+": "+data[i]+"\n";
 		}
 		r+= "-------------------------------------------------------------------------------------";

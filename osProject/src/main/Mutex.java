@@ -70,5 +70,12 @@ public class Mutex {
 		return fileBlockedQueue;
 	}
 	
-	
+	public void printMutex() {
+		System.out.println("userInput mutex: "+this.userInput);
+		System.out.println("userInput blocked queue: "+this.userInputBlockedQueue);
+		System.out.println("userOutput mutex: "+this.userOutput);
+		System.out.println("userOutput blocked queue: "+this.userOutputBlockedQueue);
+		System.out.println("file mutex: "+this.file);
+		System.out.println("file blocked queue: "+this.fileBlockedQueue);
+	}
 }

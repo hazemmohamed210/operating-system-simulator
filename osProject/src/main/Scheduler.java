@@ -40,23 +40,48 @@ public class Scheduler {
 
 	public void Schedule(Interpreter i, String[] programs, int[] arrivalTimes) {
 		int j = 0;
+		int timeSliceCounter = 0;
 		while(true) {
 			System.out.println("------------------------------------ clock cycle: "+this.clockCycle+" ------------------------------------");
 			if(j < arrivalTimes.length && this.clockCycle == arrivalTimes[j]) {
 				System.out.println(programs[j]+" arrived at time "+this.clockCycle);
-				i.createProcess(programs[j], j);
-				i.getReadyQueue().offer(j);
+				i.createProcess(programs[j], j+1);
+				if(i.getReadyQueue().size() == 0 && i.getCurrRunning().equals("none")) {
+					i.setCurrRunning((j+1)+"");
+				} else {
+					i.getReadyQueue().offer(j+1);
+				}
 			} else {
 				j--;
 			}
+			// increment time slice counter
+			if(timeSliceCounter == this.timeSlice) {
+				System.out.println("time slice finished !!!");
+				if(i.getReadyQueue().isEmpty()) timeSliceCounter = 0;
+				else {
+					timeSliceCounter = 0;
+					String prevRunning = i.getCurrRunning();
+//					System.out.println("hello "+i.getCurrRunning());
+					i.writeToDisk(Integer.parseInt(i.getCurrRunning()));
+					i.setCurrRunning(i.getReadyQueue().poll()+"");
+					i.getReadyQueue().offer(Integer.parseInt(prevRunning));
+				}
+			}
+			// execute an instruction
+			System.out.println("execute instruction: "+i.fetch(Integer.parseInt(i.getCurrRunning())));
+			i.decodeAndExecute(i.fetch(Integer.parseInt(i.getCurrRunning())));
+			i.getMutex().printMutex();
+			i.getMemory().updateProcessPC(j+1);
 			System.out.println("ready queue: "+i.getReadyQueue());
 			System.out.println("blocked queue: "+i.getBlockedQueue());
-			if (this.clockCycle == 1) i.writeToDisk(j);
+			System.out.println("Process currently running: "+"program_"+i.getCurrRunning());
+//			if (this.clockCycle == 1) i.writeToDisk(j);
 			System.out.println(i.getMemory());
+			timeSliceCounter++;
 			this.clockCycle++;
 			System.out.println();
 			j++;
-			if(arrivalTimes.length != programs.length || programs.length == 0 || this.clockCycle == 2) {
+			if(arrivalTimes.length != programs.length || programs.length == 0 || this.clockCycle == 7) {
 				break;
 			}
 		}
