@@ -1,19 +1,5 @@
 package main;
 
-// 1 clk cycle = 1 instruction 
-
-// prog 1 arrives at 0
-// prog 1 becomes running at 0
-// prog 1 executes instr 1 at 0
-// prog 2 arrives at 1
-// prog 2 enters ready queue as prog 1 is running at 1
-// prog 1 executes instr 2 at time 1
-// prog 1 goes to the ready queue at 2 ---------------- process 1 to the disk file ----------------------------
-// prog 2 becomes running at 2
-// prog 2 executes instr 1 at 2
-
-
-
 public class Scheduler {
 	private int clockCycle;
 	private int timeSlice;
@@ -40,6 +26,7 @@ public class Scheduler {
 
 	public void Schedule(Interpreter i, String[] programs, int[] arrivalTimes) {
 		int j = 0;
+		int finished = 0;
 		int timeSliceCounter = 0;
 		while(true) {
 			System.out.println("------------------------------------ clock cycle: "+this.clockCycle+" ------------------------------------");
@@ -48,40 +35,82 @@ public class Scheduler {
 				i.createProcess(programs[j], j+1);
 				if(i.getReadyQueue().size() == 0 && i.getCurrRunning().equals("none")) {
 					i.setCurrRunning((j+1)+"");
+					((Pair)(i.getMemory().get(2))).setValue(ProcessState.RUNNING);
 				} else {
 					i.getReadyQueue().offer(j+1);
 				}
 			} else {
 				j--;
-			}
+			} 
 			// increment time slice counter
-			if(timeSliceCounter == this.timeSlice) {
+			if(timeSliceCounter >= this.timeSlice) {
 				System.out.println("time slice finished !!!");
 				if(i.getReadyQueue().isEmpty()) timeSliceCounter = 0;
 				else {
 					timeSliceCounter = 0;
 					String prevRunning = i.getCurrRunning();
 //					System.out.println("hello "+i.getCurrRunning());
-					i.writeToDisk(Integer.parseInt(i.getCurrRunning()));
-					i.setCurrRunning(i.getReadyQueue().poll()+"");
-					i.getReadyQueue().offer(Integer.parseInt(prevRunning));
+//					i.writeToDisk(Integer.parseInt(i.getCurrRunning()));
+					String process = i.getReadyQueue().poll()+"";
+					i.setCurrRunning(process);
+					System.out.println(i.getReadyQueue() + "<----------------------------------------");
+					if(i.getInDisk().equals(process)) {
+						i.diskToMemory();
+					}
+					else if (((Pair)(i.getMemory().get( i.getMemory().getProcessBounds(Integer.parseInt(prevRunning))[0]+2))).getValue() != ProcessState.FINISHED) {
+						i.getReadyQueue().offer(Integer.parseInt(prevRunning));
+						((Pair)(i.getMemory().get( i.getMemory().getProcessBounds(Integer.parseInt(prevRunning))[0]+2))).setValue(ProcessState.READY);
+					}
+					System.out.println(i.getReadyQueue() + "<----------------------------------------");
+//					System.out.println(i.getInDisk()+" kkkkkkkkkkkkkkkk");
+//					System.out.println(i.getCurrRunning()+" kkkkkkkkkkkkkkkk");
+					((Pair)(i.getMemory().get( i.getMemory().getProcessBounds(Integer.parseInt(i.getCurrRunning()))[0]+2))).setValue(ProcessState.RUNNING);
+					System.out.println(i.getReadyQueue() + "<----------------------------------------");
 				}
 			}
 			// execute an instruction
-			System.out.println("execute instruction: "+i.fetch(Integer.parseInt(i.getCurrRunning())));
-			i.decodeAndExecute(i.fetch(Integer.parseInt(i.getCurrRunning())));
+			if (finished < programs.length) {
+				System.out.println(i.getReadyQueue() + "<<----------------------------------------");
+				System.out.println("Process currently running: "+"program_"+i.getCurrRunning());
+				System.out.println("execute instruction: "+i.fetch(Integer.parseInt(i.getCurrRunning())));
+				String prevRunning = i.getCurrRunning();
+//				System.out.println("CURRENTLY RUNNING ---------------------------------- "+i.getCurrRunning());
+				System.out.println(i.getReadyQueue() +" " + i.getCurrRunning()+ "<**----------------------------------------");
+				i.decodeAndExecute(i.fetch(Integer.parseInt(i.getCurrRunning())));
+				System.out.println(i.getReadyQueue() +" " + i.getCurrRunning()+ "<**----------------------------------------");
+				boolean blockOccurred = false;
+				if(i.getBlockedQueue().contains(Integer.parseInt(prevRunning))) {
+					timeSliceCounter = this.timeSlice;
+					blockOccurred = true;
+					if(i.getInDisk().equals(i.getCurrRunning())) {
+						i.diskToMemory();
+					}
+					System.out.println(i.getReadyQueue() + "<<<----------------------------------------");
+//					System.out.println(i.getCurrRunning());
+					((Pair)(i.getMemory().get( i.getMemory().getProcessBounds(Integer.parseInt(i.getCurrRunning()))[0]+2))).setValue(ProcessState.RUNNING);
+				} else {
+					blockOccurred = false;
+				}
+				if(!blockOccurred) i.getMemory().updateProcessPC(Integer.parseInt(i.getCurrRunning()));
+			}
+			if(i.fetch(Integer.parseInt(i.getCurrRunning())).equals("")) {
+				finished++;
+				timeSliceCounter = this.timeSlice;
+				((Pair)(i.getMemory().get(i.getMemory().getProcessBounds(Integer.parseInt(i.getCurrRunning()))[0]+2))).setValue(ProcessState.FINISHED);
+				if (i.getReadyQueue().contains(Integer.parseInt(i.getCurrRunning()))) i.getReadyQueue().remove(Integer.parseInt(i.getCurrRunning()));
+			} 
 			i.getMutex().printMutex();
-			i.getMemory().updateProcessPC(j+1);
 			System.out.println("ready queue: "+i.getReadyQueue());
 			System.out.println("blocked queue: "+i.getBlockedQueue());
-			System.out.println("Process currently running: "+"program_"+i.getCurrRunning());
 //			if (this.clockCycle == 1) i.writeToDisk(j);
 			System.out.println(i.getMemory());
+			System.out.println("last index: "+i.getMemory().getLastIndex());
 			timeSliceCounter++;
 			this.clockCycle++;
 			System.out.println();
 			j++;
-			if(arrivalTimes.length != programs.length || programs.length == 0 || this.clockCycle == 7) {
+			if(arrivalTimes.length != programs.length || programs.length == 0 || finished == programs.length) { //  || this.clockCycle == 12
+				System.out.println("all programs finished execution successfully :)");
 				break;
 			}
 		}

@@ -49,6 +49,31 @@ public class Memory {
 		}
 	}
 	
+	public int getVar(int pId, String varName) {
+		if(this.data[0] != null && (int)((Pair)this.data[0]).getValue() == pId) {
+			if(varName.equals("a")) return (int)((Pair)this.data[8]).getValue();
+			else if(varName.equals("b")) return (int)((Pair)this.data[9]).getValue();
+			else return (int)((Pair)this.data[10]).getValue();
+		} else if (this.data[4] != null && (int)((Pair)this.data[4]).getValue() == pId) {
+			if(varName.equals("a")) return (int)((Pair)this.data[24]).getValue();
+			else if(varName.equals("b")) return (int)((Pair)this.data[25]).getValue();
+			else return (int)((Pair)this.data[26]).getValue();
+		}
+		return -1000;
+	}
+	
+	public void setVar(int pId, String varName, Object val) {
+		if(this.data[0] != null && (int)((Pair)this.data[0]).getValue() == pId) {
+			if(varName.equals("a")) this.data[8] = new Pair("var-a",val);
+			else if(varName.equals("b")) this.data[9] = new Pair("var-a",val);
+			else this.data[9] = new Pair("var-tmp",val);
+		} else if (this.data[4] != null && (int)((Pair)this.data[4]).getValue() == pId) {
+			if(varName.equals("a")) this.data[24] = new Pair("var-a",val);
+			else if(varName.equals("b")) this.data[25] = new Pair("var-a",val);
+			else this.data[26] = new Pair("var-tmp",val);
+		}
+	}
+	
 	public void updateProcessPC(int pId) {
 		if(this.data[0] != null && (int)((Pair)this.data[0]).getValue() == pId) {
 			int pc = (int)((Pair)this.data[1]).getValue();
