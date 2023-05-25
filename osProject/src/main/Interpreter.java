@@ -15,7 +15,6 @@ public class Interpreter {
 	private String currRunning;
 	private String inDisk;
 	
-	// 2nd commit
 	public Interpreter(int timeSlice, String[] programs, int[] arrivalTimes) {
 		this.readyQueue = new ConcurrentLinkedQueue<>();
 		this.blockedQueue = new ConcurrentLinkedQueue<>();
@@ -47,23 +46,18 @@ public class Interpreter {
 		return memory;
 	}
 
-
 	public Queue<Integer> getReadyQueue() {
 		return readyQueue;
 	}
-
 
 	public Queue<Integer> getBlockedQueue() {
 		return blockedQueue;
 	}
 
-
 	public Mutex getMutex() {
 		return mutex;
 	}
 
-
-	// CHECK THAT THE PROCESS THAT HAS THE RESOURCE IS THE ONE CALLING SEM SIGNAL
 	public void createProcess(String programName, int id) {
 		try {
             File file = new File("src/"+programName+".txt");
@@ -71,12 +65,8 @@ public class Interpreter {
             BufferedReader bufferedReader = new BufferedReader(fileReader);
 
             String line;
-//            if(this.memory.getLastIndex() == 40) {
-//            	this.writeToDisk(id);
-//            } // 0 4 8 23
             int start = (this.memory.getLastIndex() == 40)? 24:this.memory.getLastIndex();
-            if(this.memory.getLastIndex() == 40) { // check if the memory is full
-            	// ha3mel check gowa el pcb 3ala ely not running
+            if(this.memory.getLastIndex() == 40) {
             	int outId = -1000;
             	if((ProcessState)((Pair)this.memory.get(2)).getValue() != ProcessState.RUNNING) {
             		outId = (int)((Pair)this.memory.get(2)).getValue();
@@ -85,31 +75,27 @@ public class Interpreter {
             		outId = (int)((Pair)this.memory.get(4)).getValue();
             		this.memory.setKernelSpaceIndex(4);
             	}
-            	int[] bounds = this.writeToDisk(outId); // write to disk w bageeb el bounds bta3et ely wadeto el disk
-            	System.out.println("bounds: "+bounds[0]+" "+bounds[1]+" "+bounds[2]+" "+bounds[3]);
+            	int[] bounds = this.writeToDisk(outId);
             	this.inDisk = outId+"";
-            	System.out.println("in disk: "+inDisk);
             	while ((line = bufferedReader.readLine()) != null) {
                 	if(this.memory.getLastIndex() == 40) {
-                		System.out.println("1st if");
-                		this.memory.setLastIndex(bounds[2]); // 40
+                		this.memory.setLastIndex(bounds[2]);
                 		this.memory.add(new Pair("var-a", null));
                 		this.memory.add(new Pair("var-b", null));
                 		this.memory.add(new Pair("var-tmp", null));
                 	} else if (this.memory.getLastIndex() == 8 || this.memory.getLastIndex() == 24) {
-                		System.out.println("2nd if");
                 		this.memory.add(new Pair("var-a", null));
                 		this.memory.add(new Pair("var-b", null));
                 		this.memory.add(new Pair("var-tmp", null));
                 	}
                    this.memory.add(new Pair("instruction", line));
-                   System.out.println("line: "+line);
                 }
             	this.memory.setLastIndex(40);
             	int[] boundss = {bounds[2], bounds[3]};
             	this.memory.addPCB(new PCB(id, bounds[2]+3, ProcessState.READY, boundss));
             	this.memory.setKernelSpaceIndex(8);
-            } else { // memory not full
+            	System.out.println("swapping: process "+id+" going in memory and process "+outId+" going out to the hard disk");
+            } else {
             	while ((line = bufferedReader.readLine()) != null) {
             		if(this.memory.getLastIndex() == 40) {
             			this.memory.setLastIndex(24);
@@ -139,8 +125,7 @@ public class Interpreter {
         }
 	}
 	
-	
-	
+	// ------------------------------------------- System Calls --------------------------------------------------------------------------
 	public void print(String printed) {
 		File file = new File("src/main/"+printed+".txt");
         FileReader fileReader;
@@ -187,7 +172,6 @@ public class Interpreter {
 			}
 			bufferedReader.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return res;
@@ -197,14 +181,21 @@ public class Interpreter {
 	public String fetch(int pId) {
 		if(this.memory.get(0) != null && (int)((Pair)this.memory.get(0)).getValue() == pId) {
 			int pc = (int)((Pair)this.memory.get(1)).getValue();
-//			this.memory.set(1, new Pair("PC",pc+1));
 			if(this.memory.get(pc) != null && ((Pair)this.memory.get(pc)).getName().equals("instruction")) return (String)((Pair)this.memory.get(pc)).getValue();
 		} else if (this.memory.get(4) != null && (int)((Pair)this.memory.get(4)).getValue() == pId) {
 			int pc = (int)((Pair)this.memory.get(5)).getValue();
 			if(this.memory.get(pc) != null && ((Pair)this.memory.get(pc)).getName().equals("instruction")) return (String)((Pair)this.memory.get(pc)).getValue();
-//			this.memory.set(5, new Pair("PC",pc+1));
 		}
 		return "";
+	}
+	
+	public static boolean canParseToInt(String input) {
+	    try {
+	        Integer.parseInt(input);
+	        return true;
+	    } catch (NumberFormatException e) {
+	        return false;
+	    }
 	}
 	
 	public void decodeAndExecute(String instr) {
@@ -263,7 +254,8 @@ public class Interpreter {
 								this.mutex.setFileOwner(pId+"");	
 							}
 						} break;
-		case "printFromTo": this.printFromTo(this.memory.getVar(Integer.parseInt(this.currRunning), instr.split(" ")[1]), this.memory.getVar(Integer.parseInt(this.currRunning), instr.split(" ")[2])); break;
+		case "printFromTo": this.printFromTo(this.memory.getVar(Integer.parseInt(this.currRunning), instr.split(" ")[1]), this.memory.getVar(Integer.parseInt(this.currRunning), instr.split(" ")[2])); 
+		break;
 		case "print": this.print(instr.split(" ")[1]); break;
 		case "writeFile": try {
 				this.writeFile(instr.split(" ")[1], instr.split(" ")[2]);
@@ -275,19 +267,40 @@ public class Interpreter {
 							Scanner sc = new Scanner(System.in);
 							System.out.println("Please enter a value");
 							String x = sc.nextLine();
-							if(instr.split(" ")[1].equals("a")) this.getMemory().setVar(Integer.parseInt(this.currRunning), "a", Integer.parseInt(x));
-							else if(instr.split(" ")[1].equals("b")) this.getMemory().setVar(Integer.parseInt(this.currRunning), "b", Integer.parseInt(x));
-							else this.getMemory().setVar(Integer.parseInt(this.currRunning), "tmp", Integer.parseInt(x));
+							if(instr.split(" ")[1].equals("a")) {
+								if(canParseToInt(x)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "a", Integer.parseInt(x));
+								else this.getMemory().setVar(Integer.parseInt(this.currRunning), "a", x);
+							}
+							else if(instr.split(" ")[1].equals("b")) {
+								if(canParseToInt(x)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "b", Integer.parseInt(x));
+								else this.getMemory().setVar(Integer.parseInt(this.currRunning), "b", x);
+							}
+							else {
+								if(canParseToInt(x)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "tmp", Integer.parseInt(x));
+								else this.getMemory().setVar(Integer.parseInt(this.currRunning), "tmp", x);
+							}
 						} else if (instr.split(" ")[2].equals("readFile")) {
-							if(instr.split(" ")[1].equals("a")) this.getMemory().setVar(Integer.parseInt(this.currRunning), "a", Integer.parseInt(this.readData(instr.split(" ")[3])));
-							else if(instr.split(" ")[1].equals("b")) this.getMemory().setVar(Integer.parseInt(this.currRunning), "b", Integer.parseInt(this.readData(instr.split(" ")[3])));
-							else this.getMemory().setVar(Integer.parseInt(this.currRunning), "tmp", Integer.parseInt(this.readData(instr.split(" ")[3])));
+							if(instr.split(" ")[1].equals("a")) {
+								String s = this.readData(instr.split(" ")[3]);
+								if(canParseToInt(s)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "a", Integer.parseInt(s));
+								else this.getMemory().setVar(Integer.parseInt(this.currRunning), "a", s);
+							}
+							else if(instr.split(" ")[1].equals("b")) {
+								String s = this.readData(instr.split(" ")[3]);
+								if(canParseToInt(s)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "b", Integer.parseInt(s));
+								else this.getMemory().setVar(Integer.parseInt(this.currRunning), "b", s);
+							} 
+							else {
+								String s = this.readData(instr.split(" ")[3]);
+								if(canParseToInt(s)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "tmp", Integer.parseInt(s));
+								else this.getMemory().setVar(Integer.parseInt(this.currRunning), "tmp", s);
+							}
 						}
 		case "": return;
 		}
 	}
 	
-	public int[] writeToDisk(int pId) { // writes process data to hard disk
+	public int[] writeToDisk(int pId) {
 		int[] bounds = this.memory.getProcessBounds(pId);
 		try (BufferedWriter writer = new BufferedWriter(new FileWriter("src/main/hardDisk.txt"))) {
 			for(int i = bounds[0]; i<bounds[1] && this.memory.get(i) != null; i++) {
@@ -321,8 +334,6 @@ public class Interpreter {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-//		System.out.println("lines: "+processLines);
-//		System.out.println(this.memory);
 		int pId = -1;
 		int[] memBounds = new int[2];
 		if(this.memory.get(2) != null && (ProcessState)((Pair)this.memory.get(2)).getValue() != ProcessState.RUNNING) {
@@ -330,10 +341,16 @@ public class Interpreter {
 			memBounds = (int[])((Pair)this.memory.get(3)).getValue();
 			this.writeToDisk(pId);
 			this.setInDisk(pId+"");
-//			System.out.println(this.memory.getLastIndex()+" <==");
 			if(processLines.size() == 0) return;
+			int pc = Integer.parseInt(processLines.get(1).split(": ")[1]);
+			if(pc < 23) {
+				pc = pc - 11;
+			} else {
+				pc = pc - 27;
+			}
+			pc = pc + memBounds[0] + 3;
 			this.memory.set(0, new Pair("processId", Integer.parseInt(processLines.get(0).split(": ")[1])));
-			this.memory.set(1, new Pair("PC", Integer.parseInt(processLines.get(1).split(": ")[1])));
+			this.memory.set(1, new Pair("PC", pc));
 			this.memory.set(2, new Pair("processState", ProcessState.READY));
 			this.memory.set(3, new Pair("memoryBoundaries", memBounds));
 			this.memory.set(memBounds[0], new Pair("var-a",processLines.get(4).split(": ")[1]));
@@ -344,16 +361,23 @@ public class Interpreter {
 				this.memory.set(i, new Pair("instruction",processLines.get(j).split(": ")[1]));
 				j++;
 			}
+			System.out.println("swapping: process "+Integer.parseInt(processLines.get(0).split(": ")[1])+" going in memory and process "+pId+" going out to the hard disk");
 			
 		} else if (this.memory.get(6) != null && (ProcessState)((Pair)this.memory.get(6)).getValue() != ProcessState.RUNNING) {
-//			System.out.println(this.memory.getLastIndex()+" <=");
 			pId = (int)((Pair)this.memory.get(4)).getValue();
 			memBounds = (int[])((Pair)this.memory.get(7)).getValue();
 			this.writeToDisk(pId);
 			this.setInDisk(pId+"");
+			int pc = Integer.parseInt(processLines.get(1).split(": ")[1]);
+			if(pc < 23) {
+				pc = pc - 11;
+			} else {
+				pc = pc - 27;
+			}
+			pc = pc + memBounds[0] + 3;
 			if(processLines.size() == 0) return;
 			this.memory.set(4, new Pair("processId", Integer.parseInt(processLines.get(0).split(": ")[1])));
-			this.memory.set(5, new Pair("PC", Integer.parseInt(processLines.get(1).split(": ")[1])));
+			this.memory.set(5, new Pair("PC", pc));
 			this.memory.set(6, new Pair("processState", ProcessState.READY));
 			this.memory.set(7, new Pair("memoryBoundaries", memBounds));
 			this.memory.set(memBounds[0], new Pair("var-a",processLines.get(4).split(": ")[1]));
@@ -364,29 +388,14 @@ public class Interpreter {
 				this.memory.set(i, new Pair("instruction",processLines.get(j).split(": ")[1]));
 				j++;
 			}
+			System.out.println("swapping: process "+Integer.parseInt(processLines.get(0).split(": ")[1])+" going in memory and process "+pId+" going out to the hard disk");
 		}
-//		System.out.println(this.memory);
 	}
 	
 	public static void main(String[] args) {
-		String[] progs = {"program_1","program_2"};
-		int[] arr = {0,1};
-		Interpreter i = new Interpreter(2, progs, arr);
-//		ArrayList<String> processLines = new ArrayList<>();
-//		FileReader fileReader;
-//		try {
-//			File f = new File("src/main/hardDisk.txt");
-//			fileReader = new FileReader(f);
-//			BufferedReader bufferedReader = new BufferedReader(fileReader);
-//			String line;
-//			while ((line = bufferedReader.readLine()) != null) {
-//				processLines.add(line);
-//			}
-//			bufferedReader.close();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//		System.out.println("lines: "+processLines);
+		String[] progs = {"program_1","program_2","program_3"};
+		int[] arr = {0,1,4};
+		Interpreter i = new Interpreter(3, progs, arr);
 	}
 	
 

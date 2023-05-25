@@ -104,11 +104,13 @@ public class Mutex {
 	}
 	
 	public void printMutex() {
+		System.out.println("---------------------- MUTEX -----------------------");
 		System.out.println("userInput mutex: "+this.userInput+", Owner: process "+this.userInputOwner);
 		System.out.println("userInput blocked queue: "+this.userInputBlockedQueue);
 		System.out.println("userOutput mutex: "+this.userOutput+", Owner: process "+this.userOutputOwner);
 		System.out.println("userOutput blocked queue: "+this.userOutputBlockedQueue);
 		System.out.println("file mutex: "+this.file+", Owner: process "+this.fileOwner);
 		System.out.println("file blocked queue: "+this.fileBlockedQueue);
+		System.out.println("-------------------- MUTEX END ---------------------");
 	}
 }

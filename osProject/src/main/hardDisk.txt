@@ -1,16 +1,14 @@
-processId: 3
-PC: 27
-processState: BLOCKED
-memoryBoundaries: [I@6bf256fa
-var-a: null
-var-b: null
+processId: 1
+PC: 18
+processState: FINISHED
+memoryBoundaries: [I@3b22cdd0
+var-a: 1
+var-b: 4
 var-tmp: null
 instruction: semWait userInput
 instruction: assign a input
+instruction: assign b input
 instruction: semSignal userInput
-instruction: semWait file
-instruction: assign b readFile a
-instruction: semSignal file
 instruction: semWait userOutput
-instruction: print a
+instruction: printFromTo a b
 instruction: semSignal userOutput

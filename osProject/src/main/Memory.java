@@ -51,13 +51,43 @@ public class Memory {
 	
 	public int getVar(int pId, String varName) {
 		if(this.data[0] != null && (int)((Pair)this.data[0]).getValue() == pId) {
-			if(varName.equals("a")) return (int)((Pair)this.data[8]).getValue();
-			else if(varName.equals("b")) return (int)((Pair)this.data[9]).getValue();
-			else return (int)((Pair)this.data[10]).getValue();
+			if(varName.equals("a")) {
+				if(((Pair)this.data[8]).getValue().getClass().getSimpleName().equals("String")) {
+					return Integer.parseInt((String) ((Pair)this.data[8]).getValue());
+				}
+				return (int)((Pair)this.data[8]).getValue();
+			} 
+			else if(varName.equals("b")) {
+				if(((Pair)this.data[9]).getValue().getClass().getSimpleName().equals("String")) {
+					return Integer.parseInt((String) ((Pair)this.data[9]).getValue());
+				}
+				return (int)((Pair)this.data[9]).getValue();
+			} 
+			else {
+				if(((Pair)this.data[10]).getValue().getClass().getSimpleName().equals("String")) {
+					return Integer.parseInt((String) ((Pair)this.data[10]).getValue());
+				}
+				return (int)((Pair)this.data[10]).getValue();
+			} 
 		} else if (this.data[4] != null && (int)((Pair)this.data[4]).getValue() == pId) {
-			if(varName.equals("a")) return (int)((Pair)this.data[24]).getValue();
-			else if(varName.equals("b")) return (int)((Pair)this.data[25]).getValue();
-			else return (int)((Pair)this.data[26]).getValue();
+			if(varName.equals("a")) {
+				if(((Pair)this.data[24]).getValue().getClass().getSimpleName().equals("String")) {
+					return Integer.parseInt((String) ((Pair)this.data[24]).getValue());
+				}
+				return (int)((Pair)this.data[24]).getValue();
+			} 
+			else if(varName.equals("b")) {
+				if(((Pair)this.data[25]).getValue().getClass().getSimpleName().equals("String")) {
+					return Integer.parseInt((String) ((Pair)this.data[25]).getValue());
+				}
+				return (int)((Pair)this.data[25]).getValue();
+			} 
+			else {
+				if(((Pair)this.data[26]).getValue().getClass().getSimpleName().equals("String")) {
+					return Integer.parseInt((String) ((Pair)this.data[26]).getValue());
+				}
+				return (int)((Pair)this.data[26]).getValue();
+			} 
 		}
 		return -1000;
 	}
@@ -65,11 +95,11 @@ public class Memory {
 	public void setVar(int pId, String varName, Object val) {
 		if(this.data[0] != null && (int)((Pair)this.data[0]).getValue() == pId) {
 			if(varName.equals("a")) this.data[8] = new Pair("var-a",val);
-			else if(varName.equals("b")) this.data[9] = new Pair("var-a",val);
+			else if(varName.equals("b")) this.data[9] = new Pair("var-b",val);
 			else this.data[9] = new Pair("var-tmp",val);
 		} else if (this.data[4] != null && (int)((Pair)this.data[4]).getValue() == pId) {
 			if(varName.equals("a")) this.data[24] = new Pair("var-a",val);
-			else if(varName.equals("b")) this.data[25] = new Pair("var-a",val);
+			else if(varName.equals("b")) this.data[25] = new Pair("var-b",val);
 			else this.data[26] = new Pair("var-tmp",val);
 		}
 	}
@@ -102,9 +132,8 @@ public class Memory {
 	}
 
 	public String toString() {
-		
 		String r = "";
-		r+= "-------------------------------------------------------------------------------------"+"\n"+"Memory"+"\n"+"------"+"\n";
+		r+= "----------------------------------------------------------------------------------------"+"\n"+"Memory"+"\n"+"------"+"\n";
 		r+= "------------------------------------- kernel space -------------------------------------"+"\n";
 		for(int i = 0; i<40; i++) {
 			if (i == 8) r+= "------------------------------------- first space -------------------------------------"+"\n";

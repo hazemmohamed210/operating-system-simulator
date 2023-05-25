@@ -42,51 +42,41 @@ public class Scheduler {
 			} else {
 				j--;
 			} 
-			// increment time slice counter
 			if(timeSliceCounter >= this.timeSlice) {
 				System.out.println("time slice finished !!!");
 				if(i.getReadyQueue().isEmpty()) timeSliceCounter = 0;
 				else {
 					timeSliceCounter = 0;
 					String prevRunning = i.getCurrRunning();
-//					System.out.println("hello "+i.getCurrRunning());
-//					i.writeToDisk(Integer.parseInt(i.getCurrRunning()));
 					String process = i.getReadyQueue().poll()+"";
 					i.setCurrRunning(process);
-					System.out.println(i.getReadyQueue() + "<----------------------------------------");
 					if(i.getInDisk().equals(process)) {
+						if(((Pair)(i.getMemory().get( i.getMemory().getProcessBounds(Integer.parseInt(prevRunning))[0]+2))).getValue() != ProcessState.FINISHED) {
+							i.getReadyQueue().offer(Integer.parseInt(prevRunning));
+							((Pair)(i.getMemory().get( i.getMemory().getProcessBounds(Integer.parseInt(prevRunning))[0]+2))).setValue(ProcessState.READY);
+						}
 						i.diskToMemory();
 					}
 					else if (((Pair)(i.getMemory().get( i.getMemory().getProcessBounds(Integer.parseInt(prevRunning))[0]+2))).getValue() != ProcessState.FINISHED) {
 						i.getReadyQueue().offer(Integer.parseInt(prevRunning));
 						((Pair)(i.getMemory().get( i.getMemory().getProcessBounds(Integer.parseInt(prevRunning))[0]+2))).setValue(ProcessState.READY);
 					}
-					System.out.println(i.getReadyQueue() + "<----------------------------------------");
-//					System.out.println(i.getInDisk()+" kkkkkkkkkkkkkkkk");
-//					System.out.println(i.getCurrRunning()+" kkkkkkkkkkkkkkkk");
 					((Pair)(i.getMemory().get( i.getMemory().getProcessBounds(Integer.parseInt(i.getCurrRunning()))[0]+2))).setValue(ProcessState.RUNNING);
-					System.out.println(i.getReadyQueue() + "<----------------------------------------");
 				}
 			}
-			// execute an instruction
 			if (finished < programs.length) {
-				System.out.println(i.getReadyQueue() + "<<----------------------------------------");
-				System.out.println("Process currently running: "+"program_"+i.getCurrRunning());
-				System.out.println("execute instruction: "+i.fetch(Integer.parseInt(i.getCurrRunning())));
+				String name = programs[Integer.parseInt(i.getCurrRunning())-1];
+				System.out.println("Process currently running: "+name);
+				System.out.println("executed instruction: "+i.fetch(Integer.parseInt(i.getCurrRunning())));
 				String prevRunning = i.getCurrRunning();
-//				System.out.println("CURRENTLY RUNNING ---------------------------------- "+i.getCurrRunning());
-				System.out.println(i.getReadyQueue() +" " + i.getCurrRunning()+ "<**----------------------------------------");
 				i.decodeAndExecute(i.fetch(Integer.parseInt(i.getCurrRunning())));
-				System.out.println(i.getReadyQueue() +" " + i.getCurrRunning()+ "<**----------------------------------------");
 				boolean blockOccurred = false;
 				if(i.getBlockedQueue().contains(Integer.parseInt(prevRunning))) {
-					timeSliceCounter = this.timeSlice;
+					timeSliceCounter = -1;
 					blockOccurred = true;
 					if(i.getInDisk().equals(i.getCurrRunning())) {
 						i.diskToMemory();
 					}
-					System.out.println(i.getReadyQueue() + "<<<----------------------------------------");
-//					System.out.println(i.getCurrRunning());
 					((Pair)(i.getMemory().get( i.getMemory().getProcessBounds(Integer.parseInt(i.getCurrRunning()))[0]+2))).setValue(ProcessState.RUNNING);
 				} else {
 					blockOccurred = false;
@@ -102,14 +92,12 @@ public class Scheduler {
 			i.getMutex().printMutex();
 			System.out.println("ready queue: "+i.getReadyQueue());
 			System.out.println("blocked queue: "+i.getBlockedQueue());
-//			if (this.clockCycle == 1) i.writeToDisk(j);
 			System.out.println(i.getMemory());
-			System.out.println("last index: "+i.getMemory().getLastIndex());
 			timeSliceCounter++;
 			this.clockCycle++;
 			System.out.println();
 			j++;
-			if(arrivalTimes.length != programs.length || programs.length == 0 || finished == programs.length) { //  || this.clockCycle == 12
+			if(arrivalTimes.length != programs.length || programs.length == 0 || finished == programs.length) {
 				System.out.println("all programs finished execution successfully :)");
 				break;
 			}
@@ -117,7 +105,7 @@ public class Scheduler {
 	}
 	
 	public static void main(String[] args) {
-//		Interpreter i = new Interpreter(2);
+		
 	}
 
 }
