@@ -14,6 +14,9 @@ public class Interpreter {
 	private Scheduler scheduler;
 	private String currRunning;
 	private String inDisk;
+	private boolean doublecycle;
+	private String assignVal;
+	private String doubleCycleProcess;
 	
 	public Interpreter(int timeSlice, String[] programs, int[] arrivalTimes) {
 		this.readyQueue = new ConcurrentLinkedQueue<>();
@@ -23,7 +26,34 @@ public class Interpreter {
 		this.scheduler = new Scheduler(timeSlice);
 		this.currRunning = "none";
 		this.inDisk = "none";
+		this.doublecycle = false;
+		this.assignVal = "";
+		this.doubleCycleProcess = "none";
 		this.scheduler.Schedule(this, programs, arrivalTimes);
+	}
+	
+	public String getDoubleCycleProcess() {
+		return doubleCycleProcess;
+	}
+
+	public void setDoubleCycleProcess(String doubleCycleProcess) {
+		this.doubleCycleProcess = doubleCycleProcess;
+	}
+
+	public boolean isDoublecycle() {
+		return doublecycle;
+	}
+
+	public void setDoublecycle(boolean doublecycle) {
+		this.doublecycle = doublecycle;
+	}
+
+	public String getAssignVal() {
+		return assignVal;
+	}
+
+	public void setAssignVal(String assignVal) {
+		this.assignVal = assignVal;
 	}
 
 	public String getInDisk() {
@@ -69,7 +99,7 @@ public class Interpreter {
             if(this.memory.getLastIndex() == 40) {
             	int outId = -1000;
             	if((ProcessState)((Pair)this.memory.get(2)).getValue() != ProcessState.RUNNING) {
-            		outId = (int)((Pair)this.memory.get(2)).getValue();
+            		outId = (int)((Pair)this.memory.get(0)).getValue();
             		this.memory.setKernelSpaceIndex(0);
             	} else {
             		outId = (int)((Pair)this.memory.get(4)).getValue();
@@ -180,10 +210,14 @@ public class Interpreter {
 	
 	public String fetch(int pId) {
 		if(this.memory.get(0) != null && (int)((Pair)this.memory.get(0)).getValue() == pId) {
+			int limit = ((int[])((Pair)this.memory.get(3)).getValue())[1]+1;
 			int pc = (int)((Pair)this.memory.get(1)).getValue();
+			if(pc > limit) return "none";
 			if(this.memory.get(pc) != null && ((Pair)this.memory.get(pc)).getName().equals("instruction")) return (String)((Pair)this.memory.get(pc)).getValue();
 		} else if (this.memory.get(4) != null && (int)((Pair)this.memory.get(4)).getValue() == pId) {
+			int limit = ((int[])((Pair)this.memory.get(7)).getValue())[1]+1;
 			int pc = (int)((Pair)this.memory.get(5)).getValue();
+			if(pc > limit) return "none";
 			if(this.memory.get(pc) != null && ((Pair)this.memory.get(pc)).getName().equals("instruction")) return (String)((Pair)this.memory.get(pc)).getValue();
 		}
 		return "";
@@ -198,6 +232,21 @@ public class Interpreter {
 	    }
 	}
 	
+	public void assign(String instr, String s) {
+		if(instr.split(" ")[1].equals("a")) {
+			if(canParseToInt(s)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "a", Integer.parseInt(s));
+			else this.getMemory().setVar(Integer.parseInt(this.currRunning), "a", s);
+		}
+		else if(instr.split(" ")[1].equals("b")) {
+			if(canParseToInt(s)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "b", Integer.parseInt(s));
+			else this.getMemory().setVar(Integer.parseInt(this.currRunning), "b", s);
+		}
+		else {
+			if(canParseToInt(s)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "tmp", Integer.parseInt(s));
+			else this.getMemory().setVar(Integer.parseInt(this.currRunning), "tmp", s);
+		}
+	}
+	
 	public void decodeAndExecute(String instr) {
 		switch(instr.split(" ")[0]) {
 		case "semWait": if(instr.split(" ")[1].equals("userInput")) {
@@ -205,6 +254,7 @@ public class Interpreter {
 							if(this.getMutex().getUserInputBlockedQueue().contains(Integer.parseInt(this.currRunning))) {
 								((Pair)(this.getMemory().get(this.getMemory().getProcessBounds(Integer.parseInt(this.getCurrRunning()))[0]+2))).setValue(ProcessState.BLOCKED);
 								this.blockedQueue.offer(Integer.parseInt(this.currRunning));
+								this.getMemory().updateProcessPC(Integer.parseInt(this.getCurrRunning()));
 								this.setCurrRunning(this.readyQueue.poll()+"");
 							}
 							this.mutex.setUserInputOwner(this.currRunning+"");
@@ -214,6 +264,7 @@ public class Interpreter {
 							if(this.getMutex().getUserOutputBlockedQueue().contains(Integer.parseInt(this.currRunning))) {
 								((Pair)(this.getMemory().get(this.getMemory().getProcessBounds(Integer.parseInt(this.getCurrRunning()))[0]+2))).setValue(ProcessState.BLOCKED);
 								this.blockedQueue.offer(Integer.parseInt(this.currRunning));
+								this.getMemory().updateProcessPC(Integer.parseInt(this.getCurrRunning()));
 								this.setCurrRunning(this.readyQueue.poll()+"");
 							}
 							this.mutex.setUserOutputOwner(this.currRunning+"");
@@ -223,6 +274,7 @@ public class Interpreter {
 							if(this.getMutex().getFileBlockedQueue().contains(Integer.parseInt(this.currRunning))) {
 								((Pair)(this.getMemory().get(this.getMemory().getProcessBounds(Integer.parseInt(this.getCurrRunning()))[0]+2))).setValue(ProcessState.BLOCKED);
 								this.blockedQueue.offer(Integer.parseInt(this.currRunning));
+								this.getMemory().updateProcessPC(Integer.parseInt(this.getCurrRunning()));
 								this.setCurrRunning(this.readyQueue.poll()+"");
 							}
 							this.mutex.setFileOwner(this.currRunning+"");
@@ -241,7 +293,7 @@ public class Interpreter {
 							if(pId != null) {
 								this.readyQueue.offer((int)pId);
 								this.blockedQueue.poll();
-								((Pair)(this.getMemory().get(this.getMemory().getProcessBounds((int)pId)[0]+2))).setValue(ProcessState.READY);
+								if (!inDisk.equals(pId+"")) ((Pair)(this.getMemory().get(this.getMemory().getProcessBounds((int)pId)[0]+2))).setValue(ProcessState.READY);
 								this.mutex.setUserOutputOwner(pId+"");
 							}
 						}
@@ -250,7 +302,7 @@ public class Interpreter {
 							if(pId != null) {
 								this.readyQueue.offer((int)pId);
 								this.blockedQueue.poll();
-								((Pair)(this.getMemory().get(this.getMemory().getProcessBounds((int)pId)[0]+2))).setValue(ProcessState.READY);
+								if (!inDisk.equals(pId+"")) ((Pair)(this.getMemory().get(this.getMemory().getProcessBounds((int)pId)[0]+2))).setValue(ProcessState.READY);
 								this.mutex.setFileOwner(pId+"");	
 							}
 						} break;
@@ -267,34 +319,14 @@ public class Interpreter {
 							Scanner sc = new Scanner(System.in);
 							System.out.println("Please enter a value");
 							String x = sc.nextLine();
-							if(instr.split(" ")[1].equals("a")) {
-								if(canParseToInt(x)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "a", Integer.parseInt(x));
-								else this.getMemory().setVar(Integer.parseInt(this.currRunning), "a", x);
-							}
-							else if(instr.split(" ")[1].equals("b")) {
-								if(canParseToInt(x)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "b", Integer.parseInt(x));
-								else this.getMemory().setVar(Integer.parseInt(this.currRunning), "b", x);
-							}
-							else {
-								if(canParseToInt(x)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "tmp", Integer.parseInt(x));
-								else this.getMemory().setVar(Integer.parseInt(this.currRunning), "tmp", x);
-							}
+							this.assignVal = x;
+							this.doublecycle = true;
+							this.doubleCycleProcess = ""+this.currRunning;
 						} else if (instr.split(" ")[2].equals("readFile")) {
-							if(instr.split(" ")[1].equals("a")) {
-								String s = this.readData(instr.split(" ")[3]);
-								if(canParseToInt(s)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "a", Integer.parseInt(s));
-								else this.getMemory().setVar(Integer.parseInt(this.currRunning), "a", s);
-							}
-							else if(instr.split(" ")[1].equals("b")) {
-								String s = this.readData(instr.split(" ")[3]);
-								if(canParseToInt(s)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "b", Integer.parseInt(s));
-								else this.getMemory().setVar(Integer.parseInt(this.currRunning), "b", s);
-							} 
-							else {
-								String s = this.readData(instr.split(" ")[3]);
-								if(canParseToInt(s)) this.getMemory().setVar(Integer.parseInt(this.currRunning), "tmp", Integer.parseInt(s));
-								else this.getMemory().setVar(Integer.parseInt(this.currRunning), "tmp", s);
-							}
+							String s = this.readData(instr.split(" ")[3]);
+							this.assignVal = s;
+							this.doublecycle = true;
+							this.doubleCycleProcess = ""+this.currRunning;
 						}
 		case "": return;
 		}
